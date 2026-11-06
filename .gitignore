@@ -1,0 +1,17 @@
+/config.json
+/data/
+/build/
+/node_modules/
+/video/
+go2rtc.yaml
+go2rtc.yml
+preferences.json
+*.exe
+*.dll
+*.log
+*.tmp
+*.dat
+*.vhdx
+*.avhdx
+.env
+.env.*

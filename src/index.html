@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="mijia-key" content="FORM_KEY_PLACEHOLDER">
+<title>米家摄像头提醒</title>
+<style>
+    :root {
+        color-scheme: dark;
+        --page: #0e151e;
+        --surface: #151f2b;
+        --inset: #111923;
+        --line: #2a3949;
+        --text: #eef4fa;
+        --muted: #a9b9ca;
+        --accent: #86e4d7;
+        background: var(--page);
+        color: var(--text);
+        font: 15px/1.5 system-ui, "Microsoft YaHei", sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    [hidden], :is(#notice, .feedback):empty { display: none !important; }
+    body { margin: 0; }
+    main { max-width: 1400px; margin: auto; padding: 32px clamp(14px, 3vw, 42px) 48px; }
+    h1, h2, p, figure, dl, dd { margin: 0; }
+    h1 { font-size: clamp(1.4rem, 3vw, 1.9rem); line-height: 1.2; letter-spacing: .025em; }
+    h2 { font-size: 1rem; font-weight: 700; }
+    .masthead, .brand, .row, .panel-head, .setting-line {
+        display: flex; align-items: center; gap: 10px; min-width: 0;
+    }
+    .masthead, .panel-head, .setting-line { justify-content: space-between; }
+    .masthead { margin-bottom: 22px; flex-wrap: wrap; gap: 12px 20px; }
+    .brand { gap: 12px; }
+    .brand-mark {
+        display: grid; place-items: center; flex: none; width: 42px; height: 42px;
+        border: 1px solid #315956; border-radius: 11px; color: var(--accent); background: #183030;
+    }
+    .brand-mark svg, .preview-empty svg { width: 23px; height: 23px; }
+    #status {
+        display: flex; align-items: baseline; gap: 8px; padding: 7px 11px;
+        border: 1px solid var(--line); border-radius: 8px; background: var(--inset); color: var(--muted);
+        font-size: .86rem;
+    }
+    #status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
+    .settings-link { display: none; color: var(--accent); font-size: .86rem; text-underline-offset: 3px; }
+    #notice {
+        margin-bottom: 14px; padding: 9px 12px; color: #ffd3a7; background: #30251e;
+        border: 1px solid #624733; border-radius: 8px;
+    }
+    .workspace {
+        display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 365px);
+        align-items: start; gap: 18px;
+    }
+    .monitor, #settings { display: grid; gap: 14px; min-width: 0; }
+    .panel { min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); }
+    .panel-head { margin-bottom: 12px; flex-wrap: wrap; }
+    .row { flex-wrap: wrap; }
+    .small, .feedback, .caption { color: var(--muted); font-size: .84rem; }
+    .feedback { margin-top: 7px; overflow-wrap: anywhere; }
+    .caption { margin-top: 7px; }
+    button, input, select { font: inherit; }
+    button, input:not([type=checkbox], [type=range]), select {
+        min-height: 34px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 7px;
+        background: var(--inset); color: var(--text);
+    }
+    button { cursor: pointer; font-size: .86rem; font-weight: 600; white-space: nowrap; }
+    button:hover:enabled { border-color: var(--accent); }
+    button:disabled { opacity: .5; cursor: default; }
+    .primary { background: var(--accent); border-color: var(--accent); color: #0c2825; }
+    .primary:hover:enabled { background: #b6f6eb; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    input[type=checkbox], input[type=range] { accent-color: var(--accent); }
+    input[type=checkbox] { margin: 0 5px 0 0; vertical-align: -1px; }
+    input[type=number] { width: 74px; }
+    input[type=range], input[type=password] { width: 100%; }
+    select { min-width: 0; max-width: 100%; }
+    .selector { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 7px; }
+    .selector select { display: block; width: 100%; margin-top: 4px; text-overflow: ellipsis; }
+    .selector > select { margin-top: 0; }
+    .preview-empty {
+        display: grid; justify-items: center; align-content: center; gap: 8px; min-height: 160px;
+        background: var(--inset); border: 1px dashed #35485c; border-radius: 10px; color: var(--muted);
+        text-align: center; padding: 18px;
+    }
+    #video { width: 100%; aspect-ratio: 16/9; background: black; border-radius: 9px; overflow: hidden; }
+    #video mijia-preview { display: block; width: 100%; height: 100%; }
+    #video:not([hidden]) + .preview-empty { display: none; }
+    #preview-resolution { color: var(--accent); font-size: .84rem; white-space: nowrap; }
+    .frames, .events { display: grid; gap: 9px; }
+    .frames { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .events { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .frames figure, .events > div { background: var(--inset); border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+    .frames figure { overflow: hidden; }
+    .frames figcaption, .events > div { padding: 8px 10px; }
+    .frames figcaption, .events dt { color: var(--muted); font-size: .82rem; }
+    .frames canvas { display: block; width: 100%; height: auto; }
+    .events dd { margin-top: 4px; font-size: .88rem; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+    .events > div:last-child { border-color: #315956; }
+    .events > div:last-child dd { color: var(--accent); }
+    .settings-panel { padding-bottom: 0; }
+    .settings-panel .panel-head { margin-bottom: 14px; }
+    .settings-group { padding-top: 12px; border-top: 1px solid var(--line); }
+    fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+    legend { margin: 0 0 6px; padding: 0; font-weight: 600; }
+    .switch { display: inline-flex; align-items: center; gap: 4px; min-height: 25px; }
+    #local-options {
+        margin-top: 7px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--inset);
+    }
+    .setting-line { margin-top: 8px; gap: 6px; flex-wrap: wrap; }
+    #screen-list label { display: block; min-height: 24px; }
+    #screen-list { margin: 3px 0 6px; color: var(--muted); font-size: .87rem; }
+    .actions {
+        position: sticky; bottom: 0; padding: 10px 0; background: var(--surface);
+        border-top: 1px solid var(--line); z-index: 1;
+    }
+    #auth { border-top: 1px solid var(--line); padding: 10px 0 14px; }
+    #auth summary { cursor: pointer; color: var(--muted); font-size: .88rem; }
+    #auth form, #auth p, #auth button { margin-top: 8px; }
+    #auth input { display: block; margin-top: 4px; }
+    @media (max-width: 850px) {
+        main { padding-top: 20px; }
+        .workspace { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+        .settings-link { display: inline; }
+        .actions { position: static; }
+    }
+    @media (max-width: 520px) {
+        .panel { padding: 12px; }
+        .settings-panel { padding-bottom: 0; }
+        .masthead { margin-bottom: 14px; }
+        .events { grid-template-columns: minmax(0, 1fr); gap: 5px; }
+        .events > div { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); align-items: baseline; gap: 8px; }
+        .events dd { margin-top: 0; }
+    }
+</style>
+<script src="/app.js" defer></script>
+<main>
+    <header class="masthead">
+        <div class="brand">
+            <span class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round">
+                    <rect x="3" y="5.5" width="13" height="13" rx="3"/><path d="M16 10l5-3v10l-5-3"/>
+                    <circle cx="9.5" cy="12" r="2"/>
+                </svg>
+            </span>
+            <h1>米家摄像头提醒</h1>
+        </div>
+        <p id="status" role="status">正在读取状态…</p>
+        <a class="settings-link" href="#settings-heading">提醒设置 ↓</a>
+    </header>
+    <p id="notice" role="status"></p>
+    <div class="workspace">
+        <div class="monitor">
+            <section class="panel" aria-labelledby="preview-heading">
+                <div class="panel-head">
+                    <h2 id="preview-heading">实时预览</h2>
+                    <div class="row">
+                        <span id="preview-resolution" class="feedback"></span>
+                        <button type="button" id="preview" class="primary">打开摄像头预览</button>
+                        <button type="button" id="hide-preview" hidden>关闭预览画面</button>
+                    </div>
+                </div>
+                <div id="video" aria-label="摄像头实时画面" hidden></div>
+                <div class="preview-empty">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="16" rx="3"/><path d="m10 8 6 4-6 4z"/>
+                    </svg>
+                    <p>预览未打开</p>
+                    <p class="small">以视频流原始分辨率播放，默认静音</p>
+                </div>
+                <p id="preview-status" class="feedback" role="status"></p>
+            </section>
+            <section class="panel" aria-labelledby="events-heading">
+                <div class="panel-head">
+                    <h2 id="events-heading">检测状态</h2>
+                    <p id="local-status" class="small"></p>
+                </div>
+                <dl class="events">
+                    <div><dt>小米 · 有人出现</dt><dd id="person">尚未收到</dd></div>
+                    <div><dt>小米 · 画面变动</dt><dd id="motion">尚未收到</dd></div>
+                    <div><dt>本地 · 画面变化</dt><dd id="local-count">尚未检测</dd></div>
+                </dl>
+                <p id="red-status" class="feedback" role="status"></p>
+            </section>
+            <section id="local-comparison" class="panel" hidden>
+                <div class="panel-head">
+                    <h2>本地检测 · 两帧对比</h2>
+                    <p id="comparison-status" class="small">等待两张检测画面…</p>
+                </div>
+                <div id="comparison-images" class="frames" hidden>
+                    <figure>
+                        <figcaption>上一帧</figcaption>
+                        <canvas id="previous-frame" width="160" height="90" role="img" aria-label="用于检测的上一帧灰度图"></canvas>
+                    </figure>
+                    <figure>
+                        <figcaption>当前帧</figcaption>
+                        <canvas id="current-frame" width="160" height="90" role="img" aria-label="用于检测的当前帧灰度图"></canvas>
+                    </figure>
+                </div>
+            </section>
+        </div>
+        <aside class="panel settings-panel" aria-labelledby="settings-heading">
+            <div class="panel-head"><h2 id="settings-heading">提醒设置</h2></div>
+            <form id="settings">
+                <fieldset id="cloud-options">
+                    <legend>小米事件</legend>
+                    <div class="selector">
+                        <select id="camera" aria-label="选择要监听的摄像头" disabled>
+                            <option value="">请先完成小米授权</option>
+                        </select>
+                        <button id="refresh-cameras" type="button" disabled>刷新摄像头</button>
+                    </div>
+                    <p id="camera-status" class="feedback" role="status"></p>
+                    <div class="row setting-line">
+                        <label class="switch"><input type="checkbox" id="watch-person"> 有人出现</label>
+                        <label class="switch"><input type="checkbox" id="watch-motion"> 画面变动</label>
+                    </div>
+                </fieldset>
+                <div class="settings-group">
+                    <label class="switch"><input type="checkbox" id="watch-local"> 本地画面变化</label>
+                    <fieldset id="local-options" aria-label="本地检测设置" hidden disabled>
+                        <div class="selector">
+                            <label class="small">go2rtc 视频流
+                                <select id="local-source" required><option value="">请选择视频流</option></select>
+                            </label>
+                            <button type="button" id="refresh-video-sources">刷新列表</button>
+                        </div>
+                        <p id="video-sources-status" class="feedback" role="status"></p>
+                        <div class="setting-line">
+                            <button type="button" id="find-video-address">查找摄像头地址</button>
+                        </div>
+                        <p id="video-address-status" class="feedback" role="status"></p>
+                        <div class="setting-line">
+                            <label for="local-threshold-slider">变化阈值</label>
+                            <span><input id="local-threshold" type="number" min="0.1" max="100" step="0.1" value="10" required aria-label="变化阈值百分比"> %</span>
+                        </div>
+                        <input id="local-threshold-slider" type="range" min="0.1" max="100" step="0.1" value="10">
+                        <p class="small">阈值越低，越容易触发。</p>
+                    </fieldset>
+                    <p class="caption">本地检测和小米事件可以同时开启。</p>
+                </div>
+                <div class="settings-group">
+                    <fieldset>
+                        <legend>红屏显示器</legend>
+                        <label class="switch"><input type="checkbox" id="all-screens" checked> 所有屏幕</label>
+                        <div id="screen-list">正在读取显示器…</div>
+                        <div class="setting-line">
+                            <button type="button" id="refresh-screens">刷新屏幕</button>
+                            <label>红屏时长 <input id="seconds" type="number" min="1" max="60" required> 秒</label>
+                        </div>
+                    </fieldset>
+                    <p class="caption">点击红屏可提前结束提醒。</p>
+                </div>
+                <div class="row actions">
+                    <button type="submit" class="primary">保存设置</button>
+                    <button type="button" id="test">测试红屏闪烁</button>
+                </div>
+            </form>
+            <details id="auth">
+                <summary>小米授权</summary>
+                <p class="small">在小米官方页面完成授权后，复制地址栏里的完整地址，再粘贴到这里。如果看到 Home Assistant 登录页，直接复制地址。</p>
+                <button type="button" id="oauth">打开小米授权</button>
+                <form id="authorize" autocomplete="off">
+                    <label for="redirect" class="small">粘贴回跳地址</label>
+                    <input id="redirect" type="password" required autocomplete="off">
+                    <button type="submit">读取摄像头列表</button>
+                </form>
+            </details>
+        </aside>
+    </div>
+</main>
+</html>

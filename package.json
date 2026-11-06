@@ -1,0 +1,14 @@
+{
+  "name": "mijia-event-web",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "node --use-system-ca --experimental-ffi src/server.js --open"
+  },
+  "dependencies": {
+    "jpeg-js": "0.4.4",
+    "mqtt": "5.16.1",
+    "yaml": "2.9.1"
+  }
+}
