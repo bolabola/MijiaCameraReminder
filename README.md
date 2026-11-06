@@ -2,6 +2,8 @@
 
 Windows 本机网页。用摄像头的画面变化或小米云事件触发指定屏幕闪红，支持实时预览。
 
+![米家摄像头提醒界面（示例数据）](docs/screenshot.png)
+
 ## 启动
 
 需要 Windows x64 和 [Node.js 26](https://nodejs.org/)。在项目目录运行：
